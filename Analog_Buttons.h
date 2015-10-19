@@ -30,14 +30,34 @@ class Analog_Buttons
   public:
 
     Analog_Buttons( int pin_number, int number_of_buttons );
+    /**
+     * Set the repeat time to the specified number of milliseconds.
+     *
+     * @param [in] milliseconds The number of milliseconds that should pass
+     * before a key is reported to have been pressed again.
+     */
     void repeat( int milliseconds )
     {
       repeat_milliseconds = milliseconds;
     }
+    /**
+     * Set the debounce time.  When a key is pressed, wait until the
+     * electrical connection is stable in order to avoid reporting a
+     * series of rapid keypresses whenever a key is pressed.
+     *
+     * @param [in] milliseconds Debouncing time in milliseconds.
+     */
     void debounce( int milliseconds )
     {
       debounce_milliseconds = milliseconds;
     }
+    /**
+     * Return the current keypress, if any.  If a key is held down and
+     * repeats are enabled, the function returns a keypress each time
+     * the repeat period has passed.
+     *
+     * @return Button number, or @a -1 if no key is pressed.
+     */
     operator int( )
     {
       return( read_key( ) );
@@ -59,8 +79,9 @@ class Analog_Buttons
       return( debounce_milliseconds );
     }
 
-    const int   pin;
-    const int   number_buttons;
+    /* Configuration. */
+    const int pin;
+    const int number_buttons;
     int repeat_milliseconds;
     int debounce_milliseconds;
 

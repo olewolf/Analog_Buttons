@@ -5,25 +5,23 @@
  * 
  *    +5V ----+----
  *            |
- *           [ ] R
+ *           [ ] R = 10k
  *           [ ]
  *            |
- *    A0 -----+---- (Button3) ----> GND
+ *    A0 -----+---- (Button0) ----> GND
  *            |
- *           [ ] R
+ *           [ ] R1 = 5k1
  *           [ ]
  *            |
  *            +---- (Button1) ----> GND
  *            |
- *           [ ] R
+ *           [ ] R2 = 15k
  *           [ ]
  *            |
  *            +---- (Button2) ----> GND
- *            |
- *           [ ] R
- *           [ ]
- *            |
- *    GND ----+-----
+ *
+ * See the library source code for instructions on how to calculate the
+ * resistor values for different numbers of buttons.
  *
  *
  * (C) 2015 Ole Wolf <wolf@blazingangles.com>
@@ -42,7 +40,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Analog_Buttons.h"
+#include <Analog_Buttons.h>
 
 
 /* Initialize three analog buttons on pin A0. */

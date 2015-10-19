@@ -2,59 +2,85 @@
  *
  * Library to decode a number of digital buttons that are connected to 
  * a single analog input using a resistor ladder.  The buttons are
- * connected as follows:
- * 
- *    +5V ----+----
+ * connected as follows, in this case for four buttons:
+ *
+ *
+ *   +5V -----+----
  *            |
  *           [ ] R
  *           [ ]
  *            |
- *    A0 -----+---- (Button5) ----> GND
+ *    A0 -----+---- (Button0) ----> GND
  *            |
- *           [ ] R
+ *           [ ] R1
  *           [ ]
  *            |
  *            +---- (Button1) ----> GND
  *            |
- *           [ ] R
+ *           [ ] R2
  *           [ ]
  *            |
  *            +---- (Button2) ----> GND
  *            |
- *           [ ] R
+ *           [ ] R3
  *           [ ]
  *            |
  *            +---- (Button3) ----> GND
- *            |
- *           [ ] R
- *           [ ]
- *            |
- *            +---- (Button4) ----> GND
- *            |
- *           [ ] R
- *           [ ]
- *            |
- *    GND ----+-----
  *
- * That is, the buttons short the resistor ladder at different positions,
- * causing the voltage at A0 to change according to which button is pressed.
- * Note that the last button is at the top, but otherwise the buttons are
- * placed in increasing order.
- * 
- * The voltage V at A0 is then given by the following equation, where N is 
- * the total number of buttons, n is  * the button number, and VCC is the
- * supply voltage:
- * 
- *     V = VCC * ( N - n )R / 6R                               (Eq. 1)
  *
- * (So, the resistor value doesn't matter as long as all resistors have the
- * same value.)
+ * The buttons short the resistor ladder at different positions, causing
+ * the voltage at A0 to change according to which button is pressed.
+ * By selecting the resistors according to the following equation, the
+ * voltage V at A0 is evenly divided in multiples of 1/N, where N is the
+ * number of buttons and R  is the resistor for button n:
+ *                        n
+ *
+ *
+ *                            n-1
+ *                 n          ---
+ *         R  =  ----- R  -   \   R                           Eq. (1)
+ *          n     N-n         /    i
+ *                            ---
+ *                            i=1
+ *
+ *
+ * That is, the resistor for button n is n/(N-n) times the value of the
+ * uppermost resistor R, minus the sum of the other resistors above the
+ * resistor for button n.  There is no resistor for button 0.
+ *
+ * For example, for N = 9 buttons and R chosen at 2k2, the first resistor
+ * becomes 1/8 R = 275, the closest resistor value being 270 Ohms.  The
+ * The second resistor becomes 2/7 R - 270 = 359, or 330 Ohms.  The third
+ * resistor becomes 3/6 R - (270+330) = 500, or 470 Ohms.  And so on.
+ * These values will yield voltages at A0 close to Vcc times 8/9, 7/9,
+ * 6/9, etc., depending on which button is pressed.
+ *
+ * The following table provides suggested values for different button
+ * counts:
+ *
+ *
+ *   ---------+-------------------------------------------------
+ *    Buttons |   R      R1     R2     R3     R4     R5     R6
+ *   ---------+-------------------------------------------------
+ *       2    |  10k    10k
+ *       3    |  10k    5k1    15k
+ *       4    |  10k    3k3    6k8    22k
+ *       5    |  10k    2k7    3k9    8k2    27k
+ *       6    |  10k    2k2    2k7    5k1    10k    33k
+ *       7    |  6k8    1k2    1k5    2k2    3k9    8k2    22k
+ *
  * 
  * The library is initialized with the analog pin number (in the above
  * diagram, it is A0) and the number of buttons.
- * 
+ *
  * The buttons are debounced and may optionally be configured to send
  * repeated presses if they are held down.
+ *
+ * Buttons are read by simply assigning the object to an integer; e.g.:
+ *
+ *   int button = Analog_Buttons_object;
+ *
+ * A negative value indicates that no button is currently pressed.
  *
  *
  * (C) 2015 Ole Wolf <wolf@blazingangles.com>
@@ -77,14 +103,14 @@
 #include "Analog_Buttons.h"
 
 
-/* Supply voltage at the top of the resistor ladder. */
-static const float SUPPLY_VOLTAGE = 5.0;
-
-/* Debounce time in milliseconds. */
+/** Debounce time in milliseconds. */
 static const int DEFAULT_DEBOUNCE_TIME  = 50;
-/* Milliseconds before the button "repeats" if held down.  The value 0
-   disables repeat. */
+/** Milliseconds before the button "repeats" if held down.  The value 0
+    disables repeat. */
 static const int DEFAULT_REPEAT_TIME    =  0;
+
+/** Number of bits in the Arduino's ADC. */
+static const int ADC_RESOLUTION = 10;
 
 
 
@@ -117,33 +143,30 @@ Analog_Buttons::Analog_Buttons( int pin_number, int number_of_buttons )
 
 /**
  * Read the analog voltage of the button pin and determine which button
- * has been pressed based on the voltage divider output.
+ * has been pressed based on the voltage divider output.  Because the
+ * voltage divider divides the voltage in multiples of 1/N, where N is the
+ * number of buttons, it becomes straight-forward to determine which
+ * button is pressed by simply taking the reciprocal of the voltage and
+ * rounding to the nearest integer.  (For performance reasons, these
+ * calculations are performed using integer math.)
  * 
- * The button is derived from Eq. 1 by:
- * 
- *    n = ( 1 - V )N + V
- * 
- * Rounding n to the nearest integer yields the button number.
+ * @return Button number, or @a -1 if no button is pressed.
  */
 int Analog_Buttons::determine_button( ) const
 {
-  int voltage_i = analogRead( pin );
-  /* The remaining code should be converted to integer math. */
-  float voltage = SUPPLY_VOLTAGE * (float)voltage_i / 1023.0;
+  const int adc_resolution = ADC_RESOLUTION;
+  const int adc_limit      = (int)( 1 << adc_resolution ) - 1;
+  /* Prepare a "half-step" voltage level because when the button number is
+	 calculated, the integer gets truncated, not rounded. */
+  const int half_step = (int)( ( (float)adc_limit / (float)number_buttons ) ) >> 1;
 
-  float button_approx = ( 1.0 - voltage ) * (float)number_buttons + voltage;
-  int button = (int)roundf( button_approx );
-
-#if 0
-  int voltage = SUPPLY_VOLTAGE * voltage_i;
-  int button_approx = ( 1023 - voltage_i ) * number_buttons + voltage * 1023;
-  int button = ( button_approx + half_voltage ) >> 10;
-#endif
-
-  /* Full voltage means no button is pressed. */
-  if( button > number_buttons )
+  int relative_voltage = analogRead( pin );
+  int button_voltage = relative_voltage * number_buttons + half_step;
+  int button         = button_voltage >> adc_resolution;
+  /* Max voltage means no key pressed. */
+  if( button == number_buttons )
   {
-    button = -1;
+    return( -1 );
   }
   return( button );
 }
