@@ -29,7 +29,31 @@ class Analog_Buttons
 {
   public:
 
+	/**
+	 * Construct the Analog_Buttons object by assigning a pin and indicating
+	 * the number of buttons on the resistor ladder.
+	 *
+	 * @param [in] pin_number The Arduino pin number for the analog buttons,
+	 *        e.g., @a A0.
+	 * @param [in] number_of_buttons The number of buttons on the resistor
+	 *        ladder.
+	 */
     Analog_Buttons( int pin_number, int number_of_buttons );
+	/**
+	 * Construct the Analog_Buttons object by assigning a pin and indicating
+	 * the number of buttons on the resistor ladder.  Also, set the repeat
+	 * time in the constructor without requiring the programmer to use another
+	 * function call.
+	 *
+	 * @param [in] pin_number The Arduino pin number for the analog buttons,
+	 *        e.g., @a A0.
+	 * @param [in] number_of_buttons The number of buttons on the resistor
+	 *        ladder.
+	 * @param [in] repeat_time When a button is held down for @a repeat_time
+	 *        milliseconds, pretend that the user has pressed it again.
+	 */
+    Analog_Buttons( int pin_number, int number_of_buttons, int repeat_time );
+
     /**
      * Set the repeat time to the specified number of milliseconds.
      *
@@ -40,6 +64,7 @@ class Analog_Buttons
     {
       repeat_milliseconds = milliseconds;
     }
+
     /**
      * Set the debounce time.  When a key is pressed, wait until the
      * electrical connection is stable in order to avoid reporting a
@@ -51,6 +76,7 @@ class Analog_Buttons
     {
       debounce_milliseconds = milliseconds;
     }
+
     /**
      * Return the current keypress, if any.  If a key is held down and
      * repeats are enabled, the function returns a keypress each time
@@ -68,6 +94,7 @@ class Analog_Buttons
 
     enum keypad_state_t { KEYPAD_STATE_IDLE, KEYPAD_STATE_DEBOUNCING };
 
+    void initialize( int pin_number, int number_of_buttons, int repeat_time );
     int determine_button( ) const;
     int read_key( );
     int repeat( ) const
@@ -80,8 +107,8 @@ class Analog_Buttons
     }
 
     /* Configuration. */
-    const int pin;
-    const int number_buttons;
+    int pin;
+    int number_buttons;
     int repeat_milliseconds;
     int debounce_milliseconds;
 

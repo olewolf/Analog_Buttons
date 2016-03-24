@@ -115,19 +115,57 @@ static const int ADC_RESOLUTION = 10;
 
 
 /**
- * Constructor for the Analog Buttons class.  The constructor stores
- * the analog pin number and the number of buttons, and initializes the
- * button repeat time and the button debounce time to default values.
+ * Constructor for the Analog Buttons class.  The constructor sets the
+ * analog pin number and the number of buttons, and initializes the
+ * button repeat time to a default value.
  * 
  * @param [in] pin_number The analog pin number; e.g., A0.
  * @param [in] number_of_buttons Number of buttons in the resistor ladder.
  */
 Analog_Buttons::Analog_Buttons( int pin_number, int number_of_buttons )
-  : pin( pin_number ),
-    number_buttons( number_of_buttons )
 {
+	initialize( pin_number, number_of_buttons, DEFAULT_REPEAT_TIME );
+}
+
+
+
+/**
+ * Constructor for the Analog Buttons class.  The constructor sets the
+ * analog pin number, the number of buttons, and the button repeat time.
+ * 
+ * @param [in] pin_number The analog pin number; e.g., A0.
+ * @param [in] number_of_buttons Number of buttons in the resistor ladder.
+ * @param [in] repeat_time When a button is held down for @a repeat_time
+ *        milliseconds, pretend that the user has pressed it again.
+ */
+Analog_Buttons::Analog_Buttons( int pin_number, int number_of_buttons,
+								int repeat_time )
+{
+	initialize( pin_number, number_of_buttons, repeat_time );
+}
+
+
+
+/**
+ * Initialize the Analog Buttons class.  The function is called by the
+ * constructors to set the analog pin number, the number of buttons, and
+ * the button repeat time, and to initialize the button debounce time to
+ * a default value.
+ * 
+ * @param [in] pin_number The analog pin number; e.g., A0.
+ * @param [in] number_of_buttons Number of buttons in the resistor ladder.
+ * @param [in] repeat_time When a button is held down for @a repeat_time
+ *        milliseconds, pretend that the user has pressed it again.
+ */
+void Analog_Buttons::initialize( int pin_number, int number_of_buttons,
+								 int repeat_time )
+{
+  /* Initialize pin number and number of buttons. */
+  pin = pin_number;
+  number_buttons = number_of_buttons;
+
   /* Initialize the repeat time and the debounce time. */
-  repeat( DEFAULT_REPEAT_TIME );
+  repeat( repeat_time );
   debounce( DEFAULT_DEBOUNCE_TIME );
 
   /* Configure the pin as an input pin. */
