@@ -12,6 +12,6 @@ Analog_Buttons	KEYWORD1
 # Methods and Functions (KEYWORD2)
 ###########################################
 
-debounce KEYWORD2
-repeat KEYWORD2
+debounce	KEYWORD2
+repeat	KEYWORD2
 
